@@ -20,6 +20,13 @@ if [ ${#linkedfiles[@]} > 1 ]; then
 	done
 fi
 
+# clean up old log files if re-running
+if [ -f /var/log/fakebad.log ]; then
+	echo "Cleaning up any previous fake log files... please wait"
+	cat /var/log/fakebad.log | xargs rm
+	rm /var/log/fakebad.log
+fi
+
 # get a disguise - random process name to use as the link name or the exec -a rename
 #ps -eo comm
 processes=($(ps -eo comm | sort -u ))
@@ -30,8 +37,15 @@ disguise=${processes[$randomnum]}
 disguise=${disguise//:/}
 disguise=${disguise//[/}
 disguise=${disguise//]/}
-
+disguise=${disguise////}
 echo "Suspect binary name: $disguise"
-# start as link name then delete the link
+
+# pick a way to execute the binary, link, exec -a, or fork?
+# ADD CODE HERE
+
+# create a hard link to the binary named the disguised name.
 ln $binary $disguise
-ls
+
+#exec ./$disguise &
+env PATH=. $disguise &
+echo "running"

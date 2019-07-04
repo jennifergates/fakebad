@@ -38,6 +38,7 @@ def getLogfilename():
     # create a log file for cleanup purposes
     cleanup = open("/var/log/fakebad.log", 'a')
     cleanup.write(logfilename+"\n\n")
+    cleanup.close()
 
     return logfilename
 
@@ -61,19 +62,19 @@ def main():
     # If no actions selected (0), just sleep so process is in ps list
     if actions == 0 :
         while True:
-	    sleep(20)
+        sleep(20)
 
     # If log action selected (1), create a random file and start logging to it
     if actions == 1 :
-	h = logger()
-	while True:
+    h = logger()
+    while True:
             h.write("logging\n\n")
             sleep(20)
             
     # If listen action selected (2 or 3), start listening on a random port
     if actions == 2 or actions == 3:
         proto = choice(['tcp','udp','raw'])
-	port = randrange(7,65535)
+    port = randrange(7,65535)
         print proto +" "+ str(port)
         
         if actions == 3:
@@ -116,7 +117,7 @@ def main():
             # Bind the socket 
             rawSocket.bind(('',0))
 
-	    while True:
+        while True:
                 if actions == 3:
                     h.write("logging\n\n")
                     sleep(20) 
