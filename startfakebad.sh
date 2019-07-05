@@ -2,6 +2,9 @@
 
 echo "Enter path to binary: "
 read binary
+binarypath=$(dirname $binary)
+binaryname=$(basename $binary)
+
 
 # if a link exists, delete it 
 echo "Checking for existing links to that binary.... this might take a minute..."
@@ -40,12 +43,25 @@ disguise=${disguise//]/}
 disguise=${disguise////}
 echo "Suspect binary name: $disguise"
 
-# pick a way to execute the binary, link, exec -a, or fork?
-# ADD CODE HERE
+# pick a way to execute the binary, (0)link, (1)exec -a, or (2)fork?
+#method=$(( $RANDOM % 3))
+method=0
 
-# create a hard link to the binary named the disguised name.
-ln $binary $disguise
+case $method in
+    0) 
+	# create a hard link to the binary named the disguised name.
+	cd /tmp
+        ln $binary $disguise
+	# run it with current dir as PATH so just process name in ps list
+	env PATH=$PATH:. $disguise &
+	;;
+    1) 
+	exec ./$disguise &
+	;;
+    2) 
+	#fork
+	;;
+esac
 
-#exec ./$disguise &
-env PATH=. $disguise &
+
 echo "running"
