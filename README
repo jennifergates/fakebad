@@ -1,3 +1,5 @@
+README FAKEBAD 
+
 fakebad was created to work on techniques to locate a malicious or possibly malicious binary running on a linux system. 
 
 The python script should be converted to a binary file with something like PyInstaller.
