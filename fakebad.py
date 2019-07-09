@@ -6,8 +6,8 @@
 # actions: 
 # no actions, just stays running
 # 1  open a file and write to it every 5 seconds
-# 2  open a network (udp, tcp or raw) listener on a random port
-# 3  both opens file and network port
+# 2  open 1-3 network listeners (udp, tcp or raw) 
+# 3  open a file and network listeners
 
 from random import choice,randrange 
 from psutil import pids,Process
@@ -15,6 +15,7 @@ from os import path,getpid
 from re import sub
 from time import sleep
 import socket
+import threading
 
 cleanuplog = "/var/log/fakebad.log"
 
@@ -47,6 +48,7 @@ def addcleanup(message):
 
 
 def logger():
+    # create a fake log file to keep open and log to
     logfile = getLogfilename()
     while path.exists(logfile):
         # print "exists"
@@ -55,13 +57,15 @@ def logger():
     return logfileh
 
 def getactions():
+    # randomly determine what actions the process will conduct
     actionnum = randrange(0,4)
     return actionnum
     
 def startnetlistener():
+    # start listening randomly on a random tcp, a random udp port, or a raw listener
     proto = choice(['tcp','udp','raw'])
     port = randrange(7,65535)
-    # print proto +" "+ str(port)
+
     # add network info for cleanup purposes
     addcleanup("Fakebad process's network connection: "+proto+" "+str(port)+"\n")
 
@@ -96,9 +100,9 @@ def startnetlistener():
 
 
 def main():
+    # randomly select process's actions
     actions = getactions()
-    # print actions
-
+    
     # add pid to cleanup log file
     processpid = str(getpid())
     addcleanup("\nProcess is running with pid "+processpid +".\n")
@@ -115,9 +119,15 @@ def main():
             h.write("logging\n\n")
             sleep(20)
             
-    # If listen action selected (2 or 3), start listening on a random port
-    if actions == 2 or actions == 3:
-        startnetlistener()
+    # If listen action selected (2 or 3), start listener(s)
+    if actions == 2 or actions == 3 :
+
+        #open 1-3 network connections of various types each in its own thread
+        rangeend = randrange(1,4)
+        for n in range(0,rangeend):
+            # create a new thread to leave the listener open and still write to the log file
+            thread = threading.Thread(target=startnetlistener, args=())
+            thread.start()
 
         #if log and network selected (3), also create random file and start logging to it
         if actions == 3:
@@ -126,9 +136,6 @@ def main():
             if actions == 3:
                 h.write("logging\n\n")
             sleep(20) 
-
-
-
 
 
 if __name__ == '__main__':
