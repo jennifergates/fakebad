@@ -11,7 +11,7 @@ echo "Checking for existing links to that binary.... this might take a minute...
 linkedfiles=($(find / -samefile $binary 2> /dev/null))
 
 echo $linkedfiles
-echo ${#linkedfiles[@]} 
+#echo ${#linkedfiles[@]} 
 
 if [ ${#linkedfiles[@]} > 1 ]; then
 	for i in "${linkedfiles[@]}"
@@ -26,10 +26,12 @@ fi
 # clean up old log files if re-running
 if [ -f /var/log/fakebad.log ]; then
 	echo "Cleaning up any previous fake log files... please wait"
-	cat /var/log/fakebad.log | xargs rm
+	cat /var/log/fakebad.log | grep -P "Fakebad process's fake log file: (.*)" | cut -d':' -f2 | xargs rm
 	rm /var/log/fakebad.log
+	
 fi
 
+echo "Creating a disguise name and starting process"
 # get a disguise - random process name to use as the link name or the exec -a rename
 #ps -eo comm
 processes=($(ps -eo comm | sort -u ))
@@ -41,11 +43,11 @@ disguise=${disguise//:/}
 disguise=${disguise//[/}
 disguise=${disguise//]/}
 disguise=${disguise////}
-echo "Suspect binary name: $disguise"
+#echo "Suspect binary name: $disguise"
 
 # pick a way to execute the binary, (0)link, (1)exec -a, or (2)fork?
 #method=$(( $RANDOM % 3))
-method=0
+method=1
 
 case $method in
     0) 
@@ -53,8 +55,9 @@ case $method in
 	cd /tmp
         ln $binary $disguise
 	# run it with current dir as PATH so just process name in ps list
-	env PATH=$PATH:. $disguise &
+	env PATH=. $disguise &
 	# remove the binary leaving it running in memory only
+	sleep 10
         rm $disguise
 	;;
     1) 
@@ -69,4 +72,4 @@ case $method in
 esac
 
 
-echo "running"
+echo "Fake bad process is now running."

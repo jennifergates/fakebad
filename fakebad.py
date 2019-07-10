@@ -33,10 +33,6 @@ def getLogfilename():
     # remove any unwanted characters
     processname = sub('[:()]', '', processname)
     logfilename = randomlocation+"/"+processname
-    # print logfilename
-  
-    # add log file name to cleanup log 
-    addcleanup("Fakebad process's fake log file: "+logfilename+"\n")
 
     return logfilename
 
@@ -51,8 +47,11 @@ def logger():
     # create a fake log file to keep open and log to
     logfile = getLogfilename()
     while path.exists(logfile):
-        # print "exists"
+        # if file already exists, get a new name
         logfile = getLogfilename()
+
+    # add log file name to cleanup log 
+    addcleanup("Fakebad process's fake log file: "+logfile+"\n")
     logfileh = open(logfile, 'a', 0)
     return logfileh
 
