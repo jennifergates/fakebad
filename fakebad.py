@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-# script to behave like an unknown and possible malicious process. Gets called from startfakebad.sh.
+# script to create a suspicious binary that behaves like an unknown and possible malicious process. 
+# Create with pyinstaller --onefile fakebad.py.  Gets called from startfakebad.sh.
 # always writes to cleanuplog (default /var/log/fakebad.log) with information for cleanup.
 
 # actions: 
@@ -16,6 +17,7 @@ from re import sub
 from time import sleep
 import socket
 import threading
+import sys
 
 cleanuplog = "/var/log/fakebad.log"
 
@@ -104,7 +106,8 @@ def main():
     
     # add pid to cleanup log file
     processpid = str(getpid())
-    addcleanup("\nProcess is running with pid "+processpid +".\n")
+    processname = sys.argv[0]
+    addcleanup("\nProcess is running with pid: "+processpid +"\nProcess is running with name: "+processname+"\n")
    
     # If no actions selected (0), just sleep so process is in ps list
     if actions == 0 :
