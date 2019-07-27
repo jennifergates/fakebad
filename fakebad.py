@@ -1,14 +1,34 @@
 #!/usr/bin/python
+##########
+##  .Description
+##      This script mimics a suspicious and possibly malicious process.  
+##      It writes to a cleanup log (default /var/log/fakebad.log) with information 
+##      about its actions.
+##
+##      The binary will randomly select to exhibit one the following profiles:
+##          0 - no actions, just a running process
+##          1 - running process that opens a file and writes to it every 5 seconds
+##          2 - running process that opens 1 to 3 network listeners (randomly decides 
+##              if tcp, udp, or raw) on random ports
+##          3 - running process that opens file and network listener
+##
+##      It should be compiled into a binary using a tool such as pyinstaller on 
+##      the system which it will be run. 
+##           Example: pyinstaller --onefile fakebad.py
+##
+##      It should be started using the accompanying startfakebad.sh script. 
+##
+##  .Notes
+##      NAME: fakebad.py
+##      AUTHOR: Jennifer Gates
+##      VERSION: 1.0
+##      LASTEDIT: 27 July 2019
+##      GIT REPO: https://github.com/jennifergates/Misc/tree/master/fakebad
+##      CHANGELOG:
+##      1.0 (27 July 2019) - Initial Draft (in progress)
+##
+########### 
 
-# script to create a suspicious binary that behaves like an unknown and possible malicious process. 
-# Create with pyinstaller --onefile fakebad.py.  Gets called from startfakebad.sh.
-# always writes to cleanuplog (default /var/log/fakebad.log) with information for cleanup.
-
-# actions: 
-# no actions, just stays running
-# 1  open a file and write to it every 5 seconds
-# 2  open 1-3 network listeners (udp, tcp or raw) 
-# 3  open a file and network listeners
 
 from random import choice,randrange 
 from psutil import pids,Process

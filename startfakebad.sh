@@ -1,8 +1,18 @@
 #!/bin/bash
 ##########
-##  startfakebad.sh
-##  This script is used to start the fakebad binary created from fakebad.py. It does some 
-##  cleanup from any previous runs and then starts the binary in ways similar to a malicious process.
+##  .Description
+##		This script is used to start the fakebad binary created from fakebad.py. It does some 
+##  	cleanup from any previous runs and then starts the binary in ways similar to a malicious process.
+##  .Example
+##		sudo startfakebad.sh 
+##  .Notes
+##      NAME: startfakebad.sh
+##      AUTHOR: Jennifer Gates
+##      VERSION: 1.0
+##      LASTEDIT: 27 July 2019
+##      GIT REPO: https://github.com/jennifergates/Misc/tree/master/fakebad
+##      CHANGELOG:
+##      1.0 (27 July 2019) - Initial Draft (in progress)
 ##
 ##########
 
