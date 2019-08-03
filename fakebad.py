@@ -35,6 +35,7 @@ from psutil import pids,Process
 from os import path,getpid
 from re import sub
 from time import sleep
+from datetime import datetime
 import socket
 import threading
 import sys
@@ -125,6 +126,8 @@ def main():
     actions = getactions()
     
     # add pid to cleanup log file
+    timestamp = datetime.now()
+    addcleanup("\n"+str(timestamp))
     processpid = str(getpid())
     processname = sys.argv[0]
     addcleanup("\nProcess is running with pid: "+processpid +"\nProcess is running with name: "+processname+"\n")

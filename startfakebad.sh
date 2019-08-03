@@ -22,7 +22,7 @@ if (( $EUID != 0 )); then
     exit
 fi
 
-echo -e "This script runs the fakebad binary in random ways in order to disguise the process in ways similiar to malicious executables.\n\n"
+echo -e "This script runs the fakebad binary in random ways in order to disguise the process similiar to malicious executables.\n\n"
 echo -e "The fakebad.py script should be used to create the binary. An easy way to do this is with pyinstaller. \n\n"
 echo -e "     EX:   # pyinstaller --onefile fakebad.py \n\n"
 
@@ -31,6 +31,8 @@ read binary
 binarypath=$(dirname $binary)
 binaryname=$(basename $binary)
 cleanuplog="/var/log/fakebad.log"
+locations=("/etc/init.d" "/etc/cron.d" "/etc/init" "/usr/sbin" "/usr/bin")
+
 
 # check if binary is still running from previous run
 if [ -f $cleanuplog ] && [ $(grep -c "pid" $cleanuplog) > 0 ]; then
@@ -40,8 +42,12 @@ if [ -f $cleanuplog ] && [ $(grep -c "pid" $cleanuplog) > 0 ]; then
 	name=$(cat $cleanuplog | grep -P "Process is running with name: " | cut -d":" -f2)
 
 	if [ $running == $name ]; then
-		echo -e "$running is running now with the same pid and name from last run. \nKilling $running $pid."
-		kill $pid
+		echo -e "$running is running now with the same pid and name from last run. \nKill $running $pid [y|n]? "
+		read killold
+		if [ $killold == "y" ]; then
+			echo -e "Killing $running $pid"
+			kill $pid
+		fi
 	fi
 
 fi
@@ -91,7 +97,7 @@ disguise=${disguise//]/}
 disguise=${disguise////}
 #echo -e "Suspect binary name: $disguise"
 
-# pick a way to execute the binary, (0)link, (1)exec -a, or (2)fork?
+# pick a way to execute the binary, (0)hard link, (1)different hame, or (2)different location?
 method=$(( $RANDOM % 3))
 #method=2
 
@@ -114,7 +120,6 @@ case $method in
 	;;
     2) 
 	# copy the file to a different location and run it from there
-	locations=("/etc/init.d" "/etc/cron.d" "/etc/init" "/usr/sbin" "/usr/bin")
 	randomloc=$(echo $(( $RANDOM % ${#locations[@]} )))
 	location=${locations[$randomloc]}
 	newloc="$location/$disguise"
@@ -126,4 +131,4 @@ case $method in
 esac
 
 
-echo -e "\n[] Fake bad process is now running."
+echo -e "\n[] Fake bad process is now running. Find it!"
