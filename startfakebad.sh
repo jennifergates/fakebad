@@ -31,21 +31,21 @@ read binary
 binarypath=$(dirname $binary)
 binaryname=$(basename $binary)
 cleanuplog="/var/log/fakebad.log"
-locations=("/etc/init.d" "/etc/cron.d" "/etc/init" "/usr/sbin" "/usr/bin")
+rotlocations=(".rgp.vavg/q" ".rgp.peba/q" ".rgp.vavg" ".hfe.fova" ".hfe.ova")
 
 
 # check if binary is still running from previous run
 if [ -f $cleanuplog ] && [ $(grep -c "pid" $cleanuplog) > 0 ]; then
 	echo -e "\n[] Checking if binary is already running... please wait"
-	pid=$(cat $cleanuplog | grep -P "Process is running with pid: " | cut -d":" -f2 )
+	pid=$(cat $cleanuplog | grep -P "is running with pid: " | cut -d":" -f2 )
 	running=$(ps -o cmd= $pid)
-	name=$(cat $cleanuplog | grep -P "Process is running with name: " | cut -d":" -f2)
+	name=$(cat $cleanuplog | grep -P "is running with name: " | cut -d":" -f2)
 
 	if [ $running == $name ]; then
-		echo -e "$running is running now with the same pid and name from last run. \nKill $running $pid [y|n]? "
+		echo -e "     $running is running now with the same pid and name from last run. \n     Kill $running $pid [y|n]? "
 		read killold
 		if [ $killold == "y" ]; then
-			echo -e "Killing $running $pid"
+			echo -e "     Killing $running $pid"
 			kill $pid
 		fi
 	fi
@@ -55,9 +55,6 @@ fi
 # if more than one hard link to the binary already exists, delete it 
 echo -e "\n[] Checking for existing links to that binary.... this might take a minute..."
 linkedfiles=($(find / -samefile $binary 2> /dev/null))
-
-#echo -e $linkedfiles
-#echo -e ${#linkedfiles[@]} 
 
 if [ ${#linkedfiles[@]} > 1 ]; then
 	for i in "${linkedfiles[@]}"
@@ -69,13 +66,27 @@ if [ ${#linkedfiles[@]} > 1 ]; then
 	done
 fi
 
+# clean up old copies of binary if copied on last run
+binaries=$(grep -c "name:" $cleanuplog)
+
+if [ $binaries -ne "0" ]; then
+	echo -e "\n[] Cleaning up any previous copies of binary file... please wait"
+	copied=$(cat $cleanuplog | grep -P "is running with name: " | cut -d':' -f2 )
+	if [ -f $copied ]; then
+		rm $copied
+	fi
+fi
+
+
 # clean up old log files if re-running
 logs=$(grep -c "log file" $cleanuplog )
-#echo $logs
+
 if [ $logs -ne "0" ]; then
 	echo -e "\n[] Cleaning up any previous fake log files... please wait"
-	cat $cleanuplog | grep -P "Fakebad process's fake log file: " | cut -d':' -f2 | xargs rm
-
+	fakelog=$(cat $cleanuplog | grep -P "Fakebad process's fake log file: " | cut -d':' -f2)
+	if [ -f $fakelog ]; then
+		rm $fakelog
+	fi
 fi
 
 if [ -f $cleanuplog ]; then
@@ -95,11 +106,9 @@ disguise=${disguise//:/}
 disguise=${disguise//[/}
 disguise=${disguise//]/}
 disguise=${disguise////}
-#echo -e "Suspect binary name: $disguise"
 
 # pick a way to execute the binary, (0)hard link, (1)different hame, or (2)different location?
 method=$(( $RANDOM % 3))
-#method=2
 
 case $method in
     0) 
@@ -120,15 +129,18 @@ case $method in
 	;;
     2) 
 	# copy the file to a different location and run it from there
+	# unobfuscate possible locations
+        locations=$(echo $rotlocations | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
+
 	randomloc=$(echo $(( $RANDOM % ${#locations[@]} )))
 	location=${locations[$randomloc]}
 	newloc="$location/$disguise"
 	cp $binary $newloc
-	#echo $newloc
 	$newloc &
 	touch $newloc -r $(which rm)
 	;;
 esac
 
 
-echo -e "\n[] Fake bad process is now running. Find it!"
+echo -e "\n[] Fake bad process is now running. Find it."
+
