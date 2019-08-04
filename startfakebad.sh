@@ -35,21 +35,22 @@ rotlocations=(".rgp.vavg/q" ".rgp.peba/q" ".rgp.vavg" ".hfe.fova" ".hfe.ova")
 
 
 # check if binary is still running from previous run
-if [ -f $cleanuplog ] && [ $(grep -c "pid" $cleanuplog) > 0 ]; then
-	echo -e "\n[] Checking if binary is already running... please wait"
-	pid=$(cat $cleanuplog | grep -P "is running with pid: " | cut -d":" -f2 )
-	running=$(ps -o cmd= $pid)
-	name=$(cat $cleanuplog | grep -P "is running with name: " | cut -d":" -f2)
+echo -e "\n[] Checking if binary is already running... please wait"
+if [ -f $cleanuplog ]; then
+	if [ $(grep -c "pid" $cleanuplog) > 0 ]; then
+		pid=$(cat $cleanuplog | grep -P "is running with pid: " | cut -d":" -f2 )
+		running=$(ps -o cmd= $pid)
+		name=$(cat $cleanuplog | grep -P "is running with name: " | cut -d":" -f2)
 
-	if [ $running == $name ]; then
-		echo -e "     $running is running now with the same pid and name from last run. \n     Kill $running $pid [y|n]? "
-		read killold
-		if [ $killold == "y" ]; then
-			echo -e "     Killing $running $pid"
-			kill $pid
+		if [ $running == $name ]; then
+			echo -e "     $running is running now with the same pid and name from last run. \n     Kill $running $pid [y|n]? "
+			read killold
+			if [ $killold == "y" ]; then
+				echo -e "     Killing $running $pid"
+				kill $pid
+			fi
 		fi
 	fi
-
 fi
 
 # if more than one hard link to the binary already exists, delete it 
@@ -67,25 +68,27 @@ if [ ${#linkedfiles[@]} > 1 ]; then
 fi
 
 # clean up old copies of binary if copied on last run
-binaries=$(grep -c "name:" $cleanuplog)
-
-if [ $binaries -ne "0" ]; then
-	echo -e "\n[] Cleaning up any previous copies of binary file... please wait"
-	copied=$(cat $cleanuplog | grep -P "is running with name: " | cut -d':' -f2 )
-	if [ -f $copied ]; then
-		rm $copied
+echo -e "\n[] Cleaning up any previous copies of binary file... please wait"
+if [ -f $cleanuplog ]; then
+	binaries=$(grep -c "name:" $cleanuplog)
+	if [ $binaries -ne "0" ]; then
+		copied=$(cat $cleanuplog | grep -P "is running with name: " | cut -d':' -f2 )
+		if [ -f $copied ]; then
+			rm $copied
+		fi
 	fi
 fi
 
-
 # clean up old log files if re-running
-logs=$(grep -c "log file" $cleanuplog )
+echo -e "\n[] Cleaning up any previous fake log files... please wait"
+if [ -f $cleanuplog ]; then
+	logs=$(grep -c "log file" $cleanuplog )
 
-if [ $logs -ne "0" ]; then
-	echo -e "\n[] Cleaning up any previous fake log files... please wait"
-	fakelog=$(cat $cleanuplog | grep -P "Fakebad process's fake log file: " | cut -d':' -f2)
-	if [ -f $fakelog ]; then
-		rm $fakelog
+	if [ $logs -ne "0" ]; then
+		fakelog=$(cat $cleanuplog | grep -P "Fakebad process's fake log file: " | cut -d':' -f2)
+		if [ -f $fakelog ]; then
+			rm $fakelog
+		fi
 	fi
 fi
 
