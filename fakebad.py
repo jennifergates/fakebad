@@ -39,12 +39,14 @@ from datetime import datetime
 import socket
 import threading
 import sys
+from codecs import decode
 
 cleanuplog = "/var/log/fakebad.log"
 
 def getLogfilename():
     # choose path for log file from list
-    locations = ["/tmp","/root","/var/log","/etc","/etc/cron.d","/opt","/usr/lib"]
+    rotlocations = ['L3RtcA==\n', 'L3Jvb3Q=\n', 'L3Zhci9sb2c=\n', 'L2V0Yw==\n', 'L2V0Yy9jcm9uLmQ=\n', 'L29wdA==\n', 'L3Vzci9saWI=\n' ]
+    locations = [ x.decode('base64') for x in rotlocations ]
     randomlocation = choice(locations)
 
     # choose name of log file from running processes
