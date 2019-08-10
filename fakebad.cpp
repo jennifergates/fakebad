@@ -36,6 +36,7 @@
 #include <ctime>
 #include <sys/types.h>
 #include <unistd.h>
+#include <chrono>
 
 using namespace std;
 
@@ -91,6 +92,14 @@ int main()
    string processinfo = "\nProcess is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
    addCleanup(processinfo, cleanuplog);
 
+   //If no actions selected (0), just sleep so process is in ps list
+   if ( actions == 0)
+   {
+      while (1 == 1)
+      {
+         time(0);
+      }
+   }
 
    message = "Testing\n";
    addCleanup(message, cleanuplog);
