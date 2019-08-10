@@ -116,13 +116,13 @@ disguise=${disguise//[/}
 disguise=${disguise//]/}
 disguise=${disguise////}
 
-# pick a way to execute the binary, (0)hard link, (1)different hame, or (2)different location?
+# randomly pick which way to execute the binary
 method=$(( $RANDOM % 5))
 #method=4
 
 # set last assigned pid to a lower number so pid assigned to process isn't always as bottom of ps
 randlastpid=$(( $RANDOM % 10240 ))
-echo $randlastpid > /proc/sys/kernel/ns_last_pid; sleep 10
+echo $randlastpid > /proc/sys/kernel/ns_last_pid; 
 
 case $method in
     0) 
@@ -180,6 +180,9 @@ case $method in
 		;;
 esac
 
+# wait for binary to start up then reset the ns_last_pid to the highest pid in ps
+sleep 10
+randlastpid=$( ps -eo pid | tail -n1 )
+echo $randlastpid > /proc/sys/kernel/ns_last_pid; sleep 10
 
 echo -e "\nFake bad process is now running. Find it! \n"
-
