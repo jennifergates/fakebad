@@ -27,7 +27,7 @@ fi
 echo -e "This script executes the fakebad binary. It chooses from a few methods of execution in an attempt to blend in."
 echo -e "The fakebad.py script should be used to create the binary. An easy way to do this is with pyinstaller. "
 echo -e "     EX:   # pyinstaller --onefile fakebad.py \n"
-echo -e "If you haven't compiled the fakebad.py into a binary on this system, quit the script now.\n Enter q to quit or c to continue [q|c]:"
+echo -e "If you haven't compiled the fakebad.py into a binary on this system, quit the script now.\n Enter q to quit or enter to continue:"
 read quitscript
 
 if ! [[ -z $quitscript ]] && [[ $quitscript == "q" ]]; then
@@ -119,13 +119,18 @@ disguise=${disguise////}
 # pick a way to execute the binary, (0)hard link, (1)different hame, or (2)different location?
 method=$(( $RANDOM % 5))
 #method=4
+
+# set last assigned pid to a lower number so pid assigned to process isn't always as bottom of ps
+randlastpid=$(( $RANDOM % 10240 ))
+echo $randlastpid > /proc/sys/kernel/ns_last_pid; sleep 10
+
 case $method in
     0) 
 		# create a hard link to the binary named the disguised name.
 		cd /tmp
         ln $binary $disguise
-		# run it with current dir as PATH so just process name in ps list
-		env PATH=. $disguise &
+		# run it in its own session with tmp dir as PATH so just process name in ps list
+		setsid bash -c "env PATH=/tmp $disguise &"
 		# remove the binary leaving it running in memory only
 		sleep 10
         rm $disguise
@@ -133,16 +138,15 @@ case $method in
     1) 
 		# create a hard link to the binary named the disguised name, change the owner to 
 		# a different user, run it in the background.
-		cd /tmp
-        ln $binary $disguise
+        ln $binary /usr/bin/$disguise
 		# run it with current dir as PATH so just process name in ps list
 		baduser=$(cat /etc/passwd | grep -e "/bin/*sh" | tail -n1 | cut -d":" -f1)
 		chown $baduser:$baduser $disguise
-		env PATH=. $disguise &
+		setsid bash -c "env PATH=/usr/bin $disguise &"
 		;;
 	2) 
 		# run the binary in the background with a disguised name in the process list
-		exec -a $disguise $binary &
+		setsid bash -c "exec -a $disguise $binary &"
 		# change the timestamp on the binary to the time of the local ls command binary
 		touch $binary -r $(which ls)
 		;;
@@ -156,7 +160,7 @@ case $method in
 		newloc="$location/$disguise"
 		cp $binary $newloc
 		# execute the file
-		$newloc &
+		setsid bash -c "$newloc &"
 		touch $newloc -r $(which rm)
 		;;
 	4) 		
@@ -169,7 +173,7 @@ case $method in
 		newloc="$location/$disguise"
 		cp $binary $newloc
 		# execute the file
-		$newloc &
+		setsid bash -c "$newloc &"
 		# remove the binary leaving it running in memory only
 		sleep 10
 		rm $newloc
