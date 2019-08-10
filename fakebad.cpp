@@ -34,6 +34,8 @@
 #include <fstream>
 #include <random>
 #include <ctime>
+#include <sys/types.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -78,15 +80,16 @@ int main()
    // Convert now to tm struct for local timezone
    tm* localtm = localtime(&now);
    string timestamp =  asctime(localtm);
-   //cout << timestamp;
    addCleanup(timestamp, cleanuplog);
 
-   // add pid to cleanup log file
-   /*addcleanup("\n"+str(timestamp))
-   processpid = str(getpid())
-   processname = sys.argv[0]
-   addcleanup("\nProcess is running with pid: "+processpid +"\nProcess is running with name: "+processname+"\n")*/
-
+   // add pid and process name to cleanup log file
+   int processpid = getpid();
+   ifstream comm("/proc/self/comm");
+   string processname;
+   getline(comm, processname);
+   cout << processname << "\n";
+   string processinfo = "\nProcess is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
+   addCleanup(processinfo, cleanuplog);
 
 
    message = "Testing\n";
