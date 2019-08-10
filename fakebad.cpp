@@ -32,21 +32,23 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <random>
+#include <ctime>
 
 using namespace std;
 
 int addCleanup(string, string);
 //int getLogfilename();
 //int logger();
-//int getactions();
+int getActions();
 //int startnetlistener();
 
 int addCleanup(string message, string cleanuplog)
 {
    
-   cout << message;
+   //cout << message;
    ofstream cleanup;
-   cleanup.open(cleanuplog);
+   cleanup.open(cleanuplog, ofstream::app);
    cleanup << message;
    cleanup.close();
 
@@ -54,12 +56,38 @@ int addCleanup(string message, string cleanuplog)
 
 }
 
+int getActions()
+{
+   int range = 4 - 0 + 1; //0-4 inclusive
+   int actions = rand() % range;
+   return actions;
+}
 
 int main() 
 {
-
+   //variables
    string message;
    string cleanuplog = "/var/log/fakebadcpp.log";
+
+   //randomly select process's actions
+   int actions = getActions();
+
+   // add timestamp to cleanup log file
+   // Current date/time based on current system
+   time_t now = time(0);
+   // Convert now to tm struct for local timezone
+   tm* localtm = localtime(&now);
+   string timestamp =  asctime(localtm);
+   //cout << timestamp;
+   addCleanup(timestamp, cleanuplog);
+
+   // add pid to cleanup log file
+   /*addcleanup("\n"+str(timestamp))
+   processpid = str(getpid())
+   processname = sys.argv[0]
+   addcleanup("\nProcess is running with pid: "+processpid +"\nProcess is running with name: "+processname+"\n")*/
+
+
 
    message = "Testing\n";
    addCleanup(message, cleanuplog);
