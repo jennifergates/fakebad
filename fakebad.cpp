@@ -37,14 +37,49 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
+#include <vector>
 
 using namespace std;
 
 int addCleanup(string, string);
-//int getLogfilename();
+string getLogfilename();
 //int logger();
 int getActions();
 //int startnetlistener();
+
+string getLogfilename()
+{
+   // choose path for log file from list of obfuscated locations
+   vector <string> rotlocations = {",bq`,fkfq+a", ",bq`,`olk+a", ",bq`,fkfq", ",rpo,p_fk", ",rpo,_fk"}; 
+   int range = rotlocations.size() - 0 + 1; //inclusive
+   int choice = rand() % range;   
+
+   // unobfuscate location
+   //vector <string> locations;
+   //for (string rotlocation : rotlocations)
+   //{
+      string location;
+      for (char rotletter : rotlocations[choice])
+      {
+         location.push_back(rotletter + 3);
+      }
+      //locations.push_back(location);
+      cout << location;
+   //}
+   return location;
+    //locations = [ x.decode('base64') for x in rotlocations ]
+    //randomlocation = choice(locations)
+
+    // # choose name of log file from running processes
+    // rpids = pids()
+    // randompid = choice(rpids)
+    // processcommand = Process(randompid)
+    // processname = processcommand.name()
+    // processname = path.basename(processname)
+    // # remove any unwanted characters
+    // processname = sub('[:()]', '', processname)
+    // logfilename = randomlocation+"/"+processname
+}
 
 int addCleanup(string message, string cleanuplog)
 {
@@ -73,7 +108,12 @@ int main()
    string cleanuplog = "/var/log/fakebadcpp.log";
 
    //randomly select process's actions
-   int actions = getActions();
+   //int actions = getActions();
+
+
+   // TESTING only
+   int actions = 0;
+   string logfilename = getLogfilename();
 
    // add timestamp to cleanup log file
    // Current date/time based on current system
