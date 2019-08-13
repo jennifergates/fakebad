@@ -64,49 +64,47 @@ string getLogfilename()
    }
 
    // choose name of log file from running processes
-   // read all numeric pid folder names from /proc into rpids vector
+   // read all numeric pid dirs from /proc for comm file contents (processname) into rpids vector
    DIR *proc_dp = NULL;
    struct dirent *proc_dptr = NULL;
    vector <string> rpids;
-   
+
    proc_dp = opendir("/proc/");
    while (NULL != (proc_dptr = readdir(proc_dp) ))
    {
       if ( proc_dptr->d_name[0] > 48 && proc_dptr->d_name[0] < 58)
       {
          string piddir = "/proc/" + (string)proc_dptr->d_name + "/comm";
-         rpids.push_back(piddir);
-         //cout << piddir;
+         ifstream pidcomm;
+         pidcomm.open(piddir);
+         string pname;
+         while (pidcomm >> pname)
+         {
+            rpids.push_back(pname);
+         }
+         pidcomm.close();
       }
    }
    closedir(proc_dp);
 
    // choose random process to copy name as a disguise
-   //add do while here<<<<
-   int prange = rpids.size() -0 + 1; //inclusive
+   int prange = rpids.size() - 0 + 1; //inclusive
    int pchoice = rand() % prange;
+   cout << rpids[pchoice] << "\n";
 
-   // read /proc/<random_pid>/comm file to get processname
-   ifstream pidcomm;
-   pidcomm.open(rpids[pchoice]);
-   if (!pidcomm)
-   {
-      cerr << "unable to open comm file";
-      exit(1);
-   }
+   // # remove any unwanted characters [:()]
+   string filename = rpids[pchoice];
+   if (filename.find("[") < filename.size()) { filename.replace(filename.find("["), 1, "");}
+   if (filename.find("]") < filename.size()) { filename.replace(filename.find("]"), 1, "");}
+   if (filename.find(":") < filename.size()) { filename.replace(filename.find(":"), 1, "");}
+   if (filename.find("(") < filename.size()) { filename.replace(filename.find("("), 1, "");}
+   if (filename.find(")") < filename.size()) { filename.replace(filename.find(")"), 1, "");}
 
-   string processname;
-   while (pidcomm >> processname)
-   {
-      cout <<processname;
-   }
-   pidcomm.close();
+   
+   //put full path together
+   string logfilename = location + "/" + filename + ".log";
+   return logfilename;
 
-   return location; //temporary
-
-    // # remove any unwanted characters
-    // processname = sub('[:()]', '', processname)
-    // logfilename = randomlocation+"/"+processname
 }
 
 int addCleanup(string message, string cleanuplog)
@@ -142,6 +140,7 @@ int main()
    // TESTING only
    int actions = 0;
    string logfilename = getLogfilename();
+   cout << logfilename + "\n";
 
    // add timestamp to cleanup log file
    // Current date/time based on current system
