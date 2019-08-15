@@ -45,7 +45,7 @@ using namespace std;
 
 int addCleanup(string, string);
 string getLogfilename();
-//int logger();
+string logger(string);
 int getActions();
 //int startnetlistener();
 
@@ -53,7 +53,7 @@ string getLogfilename()
 {
    // choose path for log file from list of obfuscated locations
    vector <string> rotlocations = {",bq`,fkfq+a", ",bq`,`olk+a", ",bq`,fkfq", ",rpo,p_fk", ",rpo,_fk"}; 
-   int range = rotlocations.size() - 0 + 1; //inclusive
+   int range = rotlocations.size(); 
    int choice = rand() % range;   
 
    // unobfuscate location
@@ -88,9 +88,9 @@ string getLogfilename()
    closedir(proc_dp);
 
    // choose random process to copy name as a disguise
-   int prange = rpids.size() - 0 + 1; //inclusive
+   int prange = rpids.size();
    int pchoice = rand() % prange;
-   cout << rpids[pchoice] << "\n";
+   //cout << rpids[pchoice] << "\n";
 
    // # remove any unwanted characters [:()]
    string filename = rpids[pchoice];
@@ -109,7 +109,7 @@ string getLogfilename()
 
 int addCleanup(string message, string cleanuplog)
 {
-   
+   // write given message to cleanup log
    //cout << message;
    ofstream cleanup;
    cleanup.open(cleanuplog, ofstream::app);
@@ -118,6 +118,25 @@ int addCleanup(string message, string cleanuplog)
 
    return 0;
 
+}
+
+string logger(string cleanuplog)
+{
+   // create a fake log file to keep open and log to
+   string logfile;
+   ifstream f;
+   int filetest;
+   do
+   {
+      logfile = getLogfilename();
+      ifstream f(logfile);
+      filetest = f.good();
+      f.close();
+   } while (filetest == 1); //if file exists, get a different name
+
+   // add log file name to cleanup log
+   addCleanup("Fakebad process's fake log file: "+logfile+"\n", cleanuplog);
+   return logfile;
 }
 
 int getActions()
@@ -138,9 +157,7 @@ int main()
 
 
    // TESTING only
-   int actions = 0;
-   string logfilename = getLogfilename();
-   cout << logfilename + "\n";
+   int actions = 1;
 
    // add timestamp to cleanup log file
    // Current date/time based on current system
@@ -156,7 +173,7 @@ int main()
    string processname;
    getline(comm, processname);
    //cout << processname << "\n";
-   string processinfo = "\nProcess is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
+   string processinfo = "Process is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
    addCleanup(processinfo, cleanuplog);
 
    //If no actions selected (0), just sleep so process is in ps list
@@ -167,6 +184,21 @@ int main()
          time(0);
       }
    }
+
+   //If no actions selected (1), periodically write to a file so process is in ps list and handle to file is open
+   if ( actions == 1)
+   {
+      string logfile = logger(cleanuplog);
+      //cout << "logfile" <<  logfile;
+      ofstream logfileh;
+      logfileh.open(logfile, ofstream::app);
+      while (1 == 1)
+      {
+         logfileh << "logging\n\n";
+         time(0);
+      }
+   }
+
 
    message = "Testing\n";
    addCleanup(message, cleanuplog);
