@@ -35,6 +35,7 @@
 #include <fstream>
 #include <random>
 #include <ctime>
+#include <time.h>
 #include <cstring>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -57,8 +58,10 @@ string logger(string);
 int getActions();
 int startTCPlistener(int);
 int startUDPlistener(int);
-int startNETlisteners(int);
+int startNETlisteners(int, int);
 int getPort();
+struct timespec onesec, nonanosec;
+
 
 string getLogfilename()
 {
@@ -168,8 +171,8 @@ int getPort()
    return port; 
 }
 
-int startNETlisteners(int port)
-{
+int startNETlisteners(int TCPport, int UDPport)
+{ 
    //code based on GeeksforGeeks.org tutorial "Socket Programming"
    int opt = TRUE; 
    int listenSocket, addrlen, newSocket, connectingSocket[30], maxConnections = 30, activity, i, totalInput, sd; 
@@ -177,6 +180,7 @@ int startNETlisteners(int port)
    int sockfd;
    char buffer[1024]; //udp date input
    struct sockaddr_in address, servaddr, cliaddr; 
+
       
    char dataInput[9]; //tcp data dataInput of 8 bytes plus string terminator \0      
    //set of socket descriptors 
@@ -186,7 +190,8 @@ int startNETlisteners(int port)
    char *C2message1 = "#574 Enter Node Number: \r\n"; 
    char *C2message2 = ", wait for further commands. \r\n"; 
    char *C2message3 = ", proceed with your mission. \r\n"; 
- 
+   char *C2message4 = "U3VwZXIgU2VjcmV0IGJhZCBzdHVmZi4= \r\n"; 
+
    //initialize all connectingSocket[] to 0 so not checked 
    for (i = 0; i < maxConnections; i++) 
    { 
@@ -211,7 +216,7 @@ int startNETlisteners(int port)
    //type of tcp socket created 
    address.sin_family = AF_INET; 
    address.sin_addr.s_addr = INADDR_ANY; 
-   address.sin_port = htons( port ); 
+   address.sin_port = htons( TCPport ); 
       
    //bind the socket to localhost port  
    if (bind(listenSocket, (struct sockaddr *)&address, sizeof(address))<0) 
@@ -221,7 +226,7 @@ int startNETlisteners(int port)
       address.sin_port = htons(getPort());
       //exit(EXIT_FAILURE); 
    } 
-   printf("Listening on TCP port %d \n", port); 
+   //printf("Listening on TCP port %d \n", port); 
       
    //try to specify maximum of 3 pending connections for the master socket 
    if (listen(listenSocket, 3) < 0) 
@@ -252,7 +257,7 @@ int startNETlisteners(int port)
    //filling UDP server information
    servaddr.sin_family = AF_INET;
    servaddr.sin_addr.s_addr = INADDR_ANY;
-   servaddr.sin_port = htons(port);
+   servaddr.sin_port = htons(UDPport);
 
    //bind the socket with the server address
    if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 )
@@ -260,7 +265,10 @@ int startNETlisteners(int port)
       perror("bind failed");
       exit(EXIT_FAILURE);
    }
-   printf("Listening on UDP port %d \n", port); 
+   //printf("Listening on UDP port %d \n", port); 
+   
+   /////THIS ISN'T DONE YET:
+   //addCleanup("Fakebad process's network connection: TCP", cleanuplog);
 
    int n;
    socklen_t len;
@@ -276,7 +284,7 @@ int startNETlisteners(int port)
       FD_SET(listenSocket, &readfds); 
       max_sd = listenSocket; 
 
-      FS_SET(sockfd, &readfds);
+      FD_SET(sockfd, &readfds);
       if (sockfd > listenSocket)
       {
          max_sd = sockfd;
@@ -337,9 +345,13 @@ int startNETlisteners(int port)
       {
          n = recvfrom(sockfd, (char *)buffer, 1024, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
          buffer[n] = '\0';
-         printf("client : %s\n", buffer);
-         sendto(sockfd, (const char *)C2message3, strlen(C2message3), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
-         printf("C2 message sent.\n");
+         //printf("client : %s\n", buffer);
+         if (buffer[0] == '4' and buffer[1] == '2')
+         {
+            sendto(sockfd, (const char *)C2message4, strlen(C2message4), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
+            //printf("C2 message sent.\n");
+         }
+
       }  
 
 
@@ -384,214 +396,6 @@ int startNETlisteners(int port)
    } 
       
 }
-
-int startTCPlistener(int port)
-{
-   //code based on GeeksforGeeks.org tutorial "Socket Programming"
-   int opt = TRUE; 
-   int listenSocket, addrlen, newSocket, connectingSocket[30], maxConnections = 30, activity, i, totalInput, sd; 
-   int max_sd; 
-   struct sockaddr_in address; 
-      
-   char dataInput[9]; //data dataInput of 8 bytes plus string terminator \0      
-   //set of socket descriptors 
-   fd_set readfds; 
-      
-   //a C2 
-   char *C2message1 = "#574 Enter Node Number: \r\n"; 
-   char *C2message2 = ", wait for further commands. \r\n"; 
-   char *C2message3 = ", proceed with your mission. \r\n"; 
- 
-   //initialize all connectingSocket[] to 0 so not checked 
-   for (i = 0; i < maxConnections; i++) 
-   { 
-      connectingSocket[i] = 0; 
-   } 
-      
-   //create a listening socket 
-   if( (listenSocket = socket(AF_INET , SOCK_STREAM , 0)) == 0) 
-   { 
-      perror("Failed to create socket. Exiting."); 
-      exit(EXIT_FAILURE); 
-   } 
-   
-   //set listening socket to allow multiple connections , 
-   if( setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, 
-      sizeof(opt)) < 0 ) 
-   { 
-      perror("Failed to setsockopt for multiple connections. Exiting."); 
-      exit(EXIT_FAILURE); 
-   } 
-   
-   //type of socket created 
-   address.sin_family = AF_INET; 
-   address.sin_addr.s_addr = INADDR_ANY; 
-   address.sin_port = htons( port ); 
-      
-   //bind the socket to localhost port  
-   if (bind(listenSocket, (struct sockaddr *)&address, sizeof(address))<0) 
-   while (bind(listenSocket, (struct sockaddr *)&address, sizeof(address))<0) 
-   { 
-      perror("Failed to bind to localhost. Exiting."); 
-      address.sin_port = htons(getPort());
-      //exit(EXIT_FAILURE); 
-   } 
-   printf("Listening on port %d \n", port); 
-      
-   //try to specify maximum of 3 pending connections for the master socket 
-   if (listen(listenSocket, 3) < 0) 
-   { 
-      perror("Failed to start listener. Exiting."); 
-      exit(EXIT_FAILURE); 
-   } 
-      
-   //accept the incoming connection 
-   addrlen = sizeof(address); 
-      
-   while(TRUE) 
-   { 
-      //clear the socket set 
-      FD_ZERO(&readfds); 
-   
-      //add master socket to set 
-      FD_SET(listenSocket, &readfds); 
-      max_sd = listenSocket; 
-         
-      //add child sockets to set 
-      for ( i = 0 ; i < maxConnections ; i++) 
-      { 
-         //socket descriptor 
-         sd = connectingSocket[i]; 
-            
-         //if valid socket descriptor then add to read list 
-         if(sd > 0) 
-            FD_SET( sd , &readfds); 
-            
-         //highest file descriptor number, need it for the select function 
-         if(sd > max_sd) 
-            max_sd = sd; 
-      } 
-   
-      //wait indefinitely for connection on one of the sockets 
-      activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL); 
-   
-      if ((activity < 0) && (errno!=EINTR)) 
-      { 
-         printf("Error selecting socket descriptor."); 
-      } 
-         
-      //check master socket for incoming connection 
-      if (FD_ISSET(listenSocket, &readfds)) 
-      { 
-         if ((newSocket = accept(listenSocket, 
-               (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) 
-         { 
-            perror("Failed to accept incoming connection. Exiting."); 
-            exit(EXIT_FAILURE); 
-         } 
-         
-         //send request for node number. 
-         if( send(newSocket, C2message1, strlen(C2message1), 0) != strlen(C2message1) ) 
-         { 
-            perror("Failed to send. Exiting."); 
-         } 
-            
-         //add new socket to array of sockets 
-         for (i = 0; i < maxConnections; i++) 
-         { 
-            //if position is empty 
-            if( connectingSocket[i] == 0 ) 
-            { 
-               connectingSocket[i] = newSocket; 
-               break; 
-            } 
-         } 
-      } 
-         
-      //handle additional input on other socket 
-      for (i = 0; i < maxConnections; i++) 
-      { 
-         sd = connectingSocket[i]; 
-            
-         if (FD_ISSET( sd , &readfds)) 
-         { 
-            //Check if connection was closed and read the incoming message 
-            if ((totalInput = read( sd , dataInput, 8)) == 0) 
-            { 
-               //get peer info
-               //getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen); 
-                  
-               //Close the socket and mark as 0 in list for reuse 
-               close( sd ); 
-               connectingSocket[i] = 0; 
-            } 
-               
-            //respond with C2 instructions. 
-            else
-            { 
-               //set the string terminating NULL byte on the end of the data read 
-               dataInput[totalInput] = '\0';
-               send(sd , dataInput, strlen(dataInput)-1, 0 );
-               if ( dataInput[1] == '2' and dataInput[0] == '4')
-               {
-                  send(sd, C2message3, strlen(C2message3) , 0 );
-               } 
-               else
-               {
-                  send(sd , C2message2 , strlen(C2message2) , 0 ); 
-               }
-               //Close the socket and mark as 0 in list for reuse 
-               close( sd ); 
-               connectingSocket[i] = 0; 
-            } 
-         } 
-      } 
-   } 
-      
-}
-
-int startUDPlistener(int port)
-{
-   int sockfd;
-   char buffer[1024];
-   char *C2message3 = ", proceed with your mission. \r\n";
-   struct sockaddr_in servaddr, cliaddr;
-
-   // Creating socket file descriptor
-   if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) 
-   {
-      perror("socket creation failed");
-      exit(EXIT_FAILURE);
-   }
-
-   memset(&servaddr, 0, sizeof(servaddr));
-   memset(&cliaddr, 0, sizeof(cliaddr));
-
-   //filling server information
-   servaddr.sin_family = AF_INET;
-   servaddr.sin_addr.s_addr = INADDR_ANY;
-   servaddr.sin_port = htons(port);
-
-   //bind the socket with the server address
-   if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 )
-   {
-      perror("bind failed");
-      exit(EXIT_FAILURE);
-   }
-
-   int n;
-   socklen_t len;
-   n = recvfrom(sockfd, (char *)buffer, 1024, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
-   buffer[n] = '\0';
-   printf("client : %s\n", buffer);
-   sendto(sockfd, (const char *)C2message3, strlen(C2message3), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
-   printf("C2 message sent.\n");
-
-   return 0;
-
-}
-
-
 
 
 int main() 
@@ -648,12 +452,13 @@ int main()
 
    if ( actions == 2)
    {
-      int listenPort = getPort();
-      startNETlisteners(listenPort);
+      int TCPlistenPort = getPort();
+      onesec.tv_sec = 1;
+      onesec.tv_nsec = 0;
+      nanosleep(&onesec, &nonanosec);
+      int UDPlistenPort = getPort();
+      startNETlisteners(TCPlistenPort, UDPlistenPort);
    }
-
-   message = "Testing\n";
-   addCleanup(message, cleanuplog);
 
    return 0;
 }
