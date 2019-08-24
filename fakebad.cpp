@@ -57,7 +57,7 @@ string StartFakeLog(string);
 int GetActions();
 int StartNETListeners(int, int, string);
 int GetPort();
-struct timespec onesec, nonanosec;
+struct timespec sleeptimerinseconds, nonanosec;
 
 
 string GetLogFilename()
@@ -194,7 +194,8 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
    { 
       connectingSocket[i] = 0; 
    } 
-      
+    
+   ////////// TCP Socket Setup   
    //create a listening tcp socket 
    if( (listenSocket = socket(AF_INET , SOCK_STREAM , 0)) == 0) 
    { 
@@ -223,7 +224,6 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
       address.sin_port = htons(GetPort());
       //exit(EXIT_FAILURE); 
    } 
-   //printf("Listening on TCP port %d \n", port); 
       
    //try to specify maximum of 3 pending connections for the master socket 
    if (listen(listenSocket, 3) < 0) 
@@ -236,6 +236,7 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
    addrlen = sizeof(address); 
 
 
+   ////////// UPP Socket Setup   
    // Creating UDP socket file descriptor
    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) 
    {
@@ -262,19 +263,20 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
       perror("bind failed");
       exit(EXIT_FAILURE);
    }
-   //printf("Listening on UDP port %d \n", port); 
    
+   ////////// Update Cleanup log   
    // Log network connections in clean up log
    string portString = "Fakebad process's network connection: TCP " + to_string(TCPport) + "\nFakebad process's network connection: UDP " + to_string(UDPport) + "\n";
    AddCleanup(portString, cleanuplog);
 
+   
+   ////////// Use Select to monitor network connections
    int n;
    socklen_t len;
 
-
-      
    while(TRUE) 
    { 
+
       //clear the socket set 
       FD_ZERO(&readfds); 
    
@@ -311,7 +313,7 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
          printf("Error selecting socket descriptor."); 
       } 
          
-      //check master socket for incoming connection 
+      //check master socket for incoming TCP connection 
       if (FD_ISSET(listenSocket, &readfds)) 
       { 
          if ((newSocket = accept(listenSocket, 
@@ -338,16 +340,15 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
             } 
          } 
       } 
-       
+
+      // check master socket for incoming UDP packet and respond if data starts with 42 
       if (FD_ISSET(sockfd, &readfds))
       {
          n = recvfrom(sockfd, (char *)buffer, 1024, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
          buffer[n] = '\0';
-         //printf("client : %s\n", buffer);
          if (buffer[0] == '4' and buffer[1] == '2')
          {
             sendto(sockfd, (const char *)C2message4, strlen(C2message4), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
-            //printf("C2 message sent.\n");
          }
 
       }  
@@ -371,7 +372,7 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
                connectingSocket[i] = 0; 
             } 
                
-            //respond with C2 instructions. 
+            //respond with C2 instructions, different message if node entered is 42. 
             else
             { 
                //set the string terminating NULL byte on the end of the data read 
@@ -405,7 +406,7 @@ int main()
    //randomly select process's actions
    //int actions = GetActions();
    // used TESTING specific actions only, uncomment above for final version
-   int actions = 2;
+   int actions = 3;
 
    // add timestamp to cleanup log file
    // Current date/time based on current system
@@ -436,23 +437,38 @@ int main()
    if ( actions == 1)
    {
       string logfile = StartFakeLog(cleanuplog);
-      //cout << "logfile" <<  logfile;
-      ofstream logfileh;
-      logfileh.open(logfile, ofstream::app);
+      const char * logfilechar = logfile.c_str();
+      FILE * pfile;
+      pfile = fopen(logfilechar, "a");
+
       while (1 == 1)
       {
-         logfileh << "logging\n\n";
-         time(0);
+         fputs("Evil log file entry.\n", pfile);
+         fflush(pfile);
+         sleeptimerinseconds.tv_sec = 60;
+         sleeptimerinseconds.tv_nsec = 0;
+         nanosleep(&sleeptimerinseconds, &nonanosec);
       }
    }
 
-   //If network action selected (2), open network connections 
-   if ( actions == 2)
+   //If network action selected (2), open network connections. if logging also selected (3) also log 
+   if ( actions == 2 || actions == 3)
    {
+      // if also logging, open log file
+      if (actions == 3)
+      {
+         string logfile = StartFakeLog(cleanuplog);
+         const char * logfilechar = logfile.c_str();
+         FILE * pfile;
+         pfile = fopen(logfilechar, "a");
+         fputs("Evil log file entry.\n", pfile);
+         fflush(pfile);
+      }
+
       int TCPlistenPort = GetPort();
-      onesec.tv_sec = 1;
-      onesec.tv_nsec = 0;
-      nanosleep(&onesec, &nonanosec);
+      sleeptimerinseconds.tv_sec = 1;
+      sleeptimerinseconds.tv_nsec = 0;
+      nanosleep(&sleeptimerinseconds, &nonanosec);
       int UDPlistenPort = GetPort();
       StartNETListeners(TCPlistenPort, UDPlistenPort, cleanuplog);
    }
