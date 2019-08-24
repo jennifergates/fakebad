@@ -11,21 +11,19 @@
 ##              if tcp, udp, or raw) on random ports
 ##          3 - running process that opens file and network listener
 ##
-##      It should be compiled into a binary using a tool such as pyinstaller on 
-##      the system which it will be run. 
-##           Example: pyinstaller --onefile fakebad.py
 ##
 ##      It should be started using the accompanying startfakebad.sh script. 
 ##
 ##  .Notes
 ##      NAME: fakebad.cpp
 ##      AUTHOR: Jennifer Gates
-##      VERSION: 1.5
-##      LASTEDIT: 19 AUG 2019
+##      VERSION: 1.8
+##      LASTEDIT: 23 AUG 2019
 ##      GIT REPO: https://github.com/jennifergates/Misc/tree/master/fakebad
 ##      CHANGELOG:
 ##      1.0 (10 AUG 2019) - Initial Draft (in progress)
 ##      1.5 (19 AUG 2019) - TCP network listener added
+##      1.8 (23 AUG 2019) - TCP and UDP network listeners combined
 ##
 ########### */
 
@@ -52,18 +50,17 @@ using namespace std;
 #define TRUE 1 
 #define FALSE 0 
 
-int addCleanup(string, string);
-string getLogfilename();
-string logger(string);
-int getActions();
-int startTCPlistener(int);
-int startUDPlistener(int);
-int startNETlisteners(int, int);
-int getPort();
+//Functions Declared
+int AddCleanup(string, string);
+string GetLogFilename();
+string StartFakeLog(string);
+int GetActions();
+int StartNETListeners(int, int, string);
+int GetPort();
 struct timespec onesec, nonanosec;
 
 
-string getLogfilename()
+string GetLogFilename()
 {
    // choose path for log file from list of obfuscated locations
    vector <string> rotlocations = {",bq`,fkfq+a", ",bq`,`olk+a", ",bq`,fkfq", ",rpo,p_fk", ",rpo,_fk"}; 
@@ -123,7 +120,7 @@ string getLogfilename()
 
 }
 
-int addCleanup(string message, string cleanuplog)
+int AddCleanup(string message, string cleanuplog)
 {
    // write given message to cleanup log
    //cout << message;
@@ -136,7 +133,7 @@ int addCleanup(string message, string cleanuplog)
 
 }
 
-string logger(string cleanuplog)
+string StartFakeLog(string cleanuplog)
 {
    // create a fake log file to keep open and log to
    string logfile;
@@ -144,18 +141,18 @@ string logger(string cleanuplog)
    int filetest;
    do
    {
-      logfile = getLogfilename();
+      logfile = GetLogFilename();
       ifstream f(logfile);
       filetest = f.good();
       f.close();
    } while (filetest == 1); //if file exists, get a different name
 
    // add log file name to cleanup log
-   addCleanup("Fakebad process's fake log file: "+logfile+"\n", cleanuplog);
+   AddCleanup("Fakebad process's fake log file: "+logfile+"\n", cleanuplog);
    return logfile;
 }
 
-int getActions()
+int GetActions()
 {
    srand (time(NULL));
    int range = 4 - 0 + 1; //0-4 inclusive
@@ -163,7 +160,7 @@ int getActions()
    return actions;
 }
 
-int getPort()
+int GetPort()
 {
    srand (time(NULL));
    int prange = 65535;
@@ -171,7 +168,7 @@ int getPort()
    return port; 
 }
 
-int startNETlisteners(int TCPport, int UDPport)
+int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
 { 
    //code based on GeeksforGeeks.org tutorial "Socket Programming"
    int opt = TRUE; 
@@ -186,13 +183,13 @@ int startNETlisteners(int TCPport, int UDPport)
    //set of socket descriptors 
    fd_set readfds; 
       
-   //a C2 
-   char *C2message1 = "#574 Enter Node Number: \r\n"; 
-   char *C2message2 = ", wait for further commands. \r\n"; 
-   char *C2message3 = ", proceed with your mission. \r\n"; 
-   char *C2message4 = "U3VwZXIgU2VjcmV0IGJhZCBzdHVmZi4= \r\n"; 
+   //Command and Control Messages for connections
+   const char *C2message1 = "#574 Enter Node Number: \r\n"; 
+   const char *C2message2 = ", wait for further commands. \r\n"; 
+   const char *C2message3 = ", proceed with your mission. \r\n"; 
+   const char *C2message4 = "U3VwZXIgU2VjcmV0IGJhZCBzdHVmZi4= \r\n"; 
 
-   //initialize all connectingSocket[] to 0 so not checked 
+   //initialize all in connectingSocket[] to 0 so not checked 
    for (i = 0; i < maxConnections; i++) 
    { 
       connectingSocket[i] = 0; 
@@ -223,7 +220,7 @@ int startNETlisteners(int TCPport, int UDPport)
    while (bind(listenSocket, (struct sockaddr *)&address, sizeof(address))<0) 
    { 
       perror("Failed to bind to localhost. Exiting."); 
-      address.sin_port = htons(getPort());
+      address.sin_port = htons(GetPort());
       //exit(EXIT_FAILURE); 
    } 
    //printf("Listening on TCP port %d \n", port); 
@@ -267,8 +264,9 @@ int startNETlisteners(int TCPport, int UDPport)
    }
    //printf("Listening on UDP port %d \n", port); 
    
-   /////THIS ISN'T DONE YET:
-   //addCleanup("Fakebad process's network connection: TCP", cleanuplog);
+   // Log network connections in clean up log
+   string portString = "Fakebad process's network connection: TCP " + to_string(TCPport) + "\nFakebad process's network connection: UDP " + to_string(UDPport) + "\n";
+   AddCleanup(portString, cleanuplog);
 
    int n;
    socklen_t len;
@@ -405,10 +403,8 @@ int main()
    string cleanuplog = "/var/log/fakebadcpp.log";
 
    //randomly select process's actions
-   //int actions = getActions();
-
-
-   // TESTING only
+   //int actions = GetActions();
+   // used TESTING specific actions only, uncomment above for final version
    int actions = 2;
 
    // add timestamp to cleanup log file
@@ -417,7 +413,7 @@ int main()
    // Convert now to tm struct for local timezone
    tm* localtm = localtime(&now);
    string timestamp =  asctime(localtm);
-   addCleanup(timestamp, cleanuplog);
+   AddCleanup(timestamp, cleanuplog);
 
    // add pid and process name to cleanup log file
    int processpid = getpid();
@@ -425,7 +421,7 @@ int main()
    string processname;
    getline(comm, processname);
    string processinfo = "Process is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
-   addCleanup(processinfo, cleanuplog);
+   AddCleanup(processinfo, cleanuplog);
 
    //If no actions selected (0), just sleep so process is in ps list
    if ( actions == 0)
@@ -436,10 +432,10 @@ int main()
       }
    }
 
-   //If no actions selected (1), periodically write to a file so process is in ps list and handle to file is open
+   //If log action selected (1), periodically write to a file so process is in ps list and handle to file is open
    if ( actions == 1)
    {
-      string logfile = logger(cleanuplog);
+      string logfile = StartFakeLog(cleanuplog);
       //cout << "logfile" <<  logfile;
       ofstream logfileh;
       logfileh.open(logfile, ofstream::app);
@@ -450,14 +446,15 @@ int main()
       }
    }
 
+   //If network action selected (2), open network connections 
    if ( actions == 2)
    {
-      int TCPlistenPort = getPort();
+      int TCPlistenPort = GetPort();
       onesec.tv_sec = 1;
       onesec.tv_nsec = 0;
       nanosleep(&onesec, &nonanosec);
-      int UDPlistenPort = getPort();
-      startNETlisteners(TCPlistenPort, UDPlistenPort);
+      int UDPlistenPort = GetPort();
+      StartNETListeners(TCPlistenPort, UDPlistenPort, cleanuplog);
    }
 
    return 0;
