@@ -25,9 +25,12 @@ fi
 
 # make sure binary has been compiled
 echo -e "This script executes the fakebad binary. It chooses from a few methods of execution in an attempt to blend in."
-echo -e "The fakebad.py script should be used to create the binary. An easy way to do this is with pyinstaller. "
+echo -e "The fakebad script should be used to create the binary. "
+echo -e " If using the python script, an easy way to do this is with pyinstaller. "
 echo -e "     EX:   # pyinstaller --onefile fakebad.py \n"
-echo -e "If you haven't compiled the fakebad.py into a binary on this system, quit the script now.\n Enter q to quit or enter to continue:"
+echo -e "If using the c++ script, an easy way to do this is with g++."
+echo -e "     EX:   # g++ fakebad.cpp -o fakebad"
+echo -e "If you haven't compiled the fakebad script into a binary on this system, quit the script now.\n Enter q to quit or enter to continue:"
 read quitscript
 
 if ! [[ -z $quitscript ]] && [[ $quitscript == "q" ]]; then
@@ -43,6 +46,7 @@ binaryname=$(basename $binary)
 cleanuplog="/var/log/fakebad.log"
 # obfuscated locations for binary to run out of so you can read the script and not ruin the exercise 
 rotlocations=(".rgp.vavg/q" ".rgp.peba/q" ".rgp.vavg" ".hfe.fova" ".hfe.ova")
+rotarguments=(" --frffvba" " -a -h" " --freivpr" " --pbas=.rgp.arg/pbas" " -b .gzc./FTSVLFOho3DtnTIlMFR=" " -p" " -h" " --hfre" " -yn" " --ybt" " -kh" " -4" " --pbas .rgp.bcg.ren/pbas")
 
 
 # if more than one hard link to the binary already exists, delete it 
@@ -110,17 +114,19 @@ processes=($(ps -eo comm | sort -u ))
 randomnum=$(echo $(( $RANDOM % ${#processes[@]} )))
 disguise=${processes[$randomnum]}
 
-# NEED to remove chars from name like /:[]
+# NEED to remove chars from name like ()/:[]
 disguise=${disguise//:/}
 disguise=${disguise//[/}
 disguise=${disguise//]/}
+disguise=${disguise//(/}
+disguise=${disguise//)/}
 disguise=${disguise////}
 
 # randomly pick which way to execute the binary
-method=$(( $RANDOM % 5))
+method=$(( $RANDOM % 6))
 #method=4
 
-# set last assigned pid to a lower number so pid assigned to process isn't always as bottom of ps
+# set last assigned pid to a lower number so pid assigned to process is not always as bottom of ps
 randlastpid=$(( $RANDOM % 10240 ))
 echo $randlastpid > /proc/sys/kernel/ns_last_pid; 
 
@@ -152,24 +158,25 @@ case $method in
 		;;
     3) 
 		# copy the file to a different location and run it from there
-		# unobfuscate possible locations
-        locations=$(echo $rotlocations | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
-        # choose a location
-		randomloc=$(echo $(( $RANDOM % ${#locations[@]} )))
-		location=${locations[$randomloc]}
+        # choose a location and unobfuscate it
+		randomloc=$(echo $(( $RANDOM % ${#rotlocations[@]} )))   		
+		rotlocation=${rotlocations[$randomloc]}
+        location=$(echo $rotlocation | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
+
 		newloc="$location/$disguise"
 		cp $binary $newloc
 		# execute the file
 		setsid bash -c "$newloc &"
+		# change the timestamp on the binary to the time of the local rm command binary
 		touch $newloc -r $(which rm)
 		;;
 	4) 		
 		# copy the file to a different location, run it from there, then delete so it is just in memory
-		# unobfuscate possible locations
-        locations=$(echo $rotlocations | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
-        # choose a location
-		randomloc=$(echo $(( $RANDOM % ${#locations[@]} )))
-		location=${locations[$randomloc]}
+        # choose a location and unobfuscate it
+		randomloc=$(echo $(( $RANDOM % ${#rotlocations[@]} )))   		
+		rotlocation=${rotlocations[$randomloc]}
+        location=$(echo $rotlocation | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
+
 		newloc="$location/$disguise"
 		cp $binary $newloc
 		# execute the file
@@ -177,6 +184,26 @@ case $method in
 		# remove the binary leaving it running in memory only
 		sleep 10
 		rm $newloc
+		;;
+	5) 		
+		## copy the file to a different location, run it from there with fake arguments
+		# unobfuscate possible fake arguments
+        # choose fake arguments
+		randomarg=$(echo $(( $RANDOM % ${#rotarguments[@]} )))
+		rotargument=${rotarguments[$randomarg]}
+        argument=$(echo $rotargument | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
+
+        # choose a location and unobfuscate it
+		randomloc=$(echo $(( $RANDOM % ${#rotlocations[@]} )))   		
+		rotlocation=${rotlocations[$randomloc]}
+        location=$(echo $rotlocation | tr '[A-Za-z/.]' '[N-ZA-Mn-za-m./]')
+
+		newloc="$location/$disguise"
+		cp $binary $newloc
+		# execute the file
+		setsid bash -c "$newloc $argument &"
+		# change the timestamp on the binary to the time of the local mv command binary
+		touch $newloc -r $(which mv)
 		;;
 esac
 
