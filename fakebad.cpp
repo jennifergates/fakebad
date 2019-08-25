@@ -401,7 +401,7 @@ int main()
 {
    //variables
    string message;
-   string cleanuplog = "/var/log/fakebadcpp.log";
+   string cleanuplog = "/var/log/fakebad.log";
 
    //randomly select process's actions
    //int actions = GetActions();
