@@ -24,12 +24,12 @@ if (( $EUID != 0 )); then
 fi
 
 # make sure binary has been compiled
-echo -e "This script executes the fakebad binary. It chooses from a few methods of execution in an attempt to blend in."
+echo -e "\n\n\nThis script executes the fakebad binary. It chooses from a few methods of execution in an attempt to blend in."
 echo -e "The fakebad script should be used to create the binary. "
-echo -e " If using the python script, an easy way to do this is with pyinstaller. "
+echo -e "  If using the python script, an easy way to do this is with pyinstaller. "
 echo -e "     EX:   # pyinstaller --onefile fakebad.py \n"
-echo -e "If using the c++ script, an easy way to do this is with g++."
-echo -e "     EX:   # g++ fakebad.cpp -o fakebad"
+echo -e "  If using the c++ script, an easy way to do this is with g++."
+echo -e "     EX:   # g++ fakebad.cpp -o fakebad\n"
 echo -e "If you haven't compiled the fakebad script into a binary on this system, quit the script now.\n Enter q to quit or enter to continue:"
 read quitscript
 
@@ -71,14 +71,15 @@ if [ -f $cleanuplog ]; then
 	if [ $(grep -c "pid" $cleanuplog) > 0 ]; then
 		pid=$(cat $cleanuplog | grep -P "is running with pid: " | cut -d":" -f2 )
 		running=$(ps -o cmd= $pid)
-		name=$(cat $cleanuplog | grep -P "is running with name: " | cut -d":" -f2)
-
-		if [ $running == $name ]; then
-			echo -e "     $running is running now with the same pid and name from last run. \n     Kill process $running with pid $pid [y|n]? "
-			read killold
-			if [ $killold == "y" ]; then
-				echo -e "     Killing $running $pid"
-				kill $pid
+		if [ -n $running ]; then
+			name=$(cat $cleanuplog | grep -P "is running with name: " | cut -d":" -f2)
+			if [ $running == $name ]; then
+				echo -e "     $running is running now with the same pid and name from last run. \n     Kill process $running with pid $pid [y|n]? "
+				read killold
+				if [ $killold == "y" ]; then
+					echo -e "     Killing $running $pid"
+					kill $pid
+				fi
 			fi
 		fi
 	fi
@@ -147,7 +148,7 @@ case $method in
         ln $binary /usr/bin/$disguise
 		# run it with current dir as PATH so just process name in ps list
 		baduser=$(cat /etc/passwd | grep -e "/bin/*sh" | tail -n1 | cut -d":" -f1)
-		chown $baduser:$baduser $disguise
+		chown $baduser:$baduser /usr/bin/$disguise
 		setsid bash -c "env PATH=/usr/bin $disguise &"
 		;;
 	2) 
