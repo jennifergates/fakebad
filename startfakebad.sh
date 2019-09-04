@@ -41,6 +41,10 @@ fi
 # Configure some variables
 echo -e "Enter path to binary: "
 read binary
+if ! [[ -f $binary ]]; then
+	echo -e "Hey! $binary does not exist. Quitting!"
+	exit
+fi
 binarypath=$(dirname $binary)
 binaryname=$(basename $binary)
 cleanuplog="/var/log/fakebad.log"
@@ -64,16 +68,17 @@ if [ ${#linkedfiles[@]} > 1 ]; then
 fi
 
 # if the cleanuplog exists, do some cleanup from previous runs
-if [ -f $cleanuplog ]; then
+if [[ -f $cleanuplog ]]; then
 
 	# check if binary is still running from previous run
 	echo -e "[] Checking if binary is already running... please wait"
 	if [ $(grep -c "pid" $cleanuplog) > 0 ]; then
 		pid=$(cat $cleanuplog | grep -P "is running with pid: " | cut -d":" -f2 )
 		running=$(ps -o cmd= $pid)
-		if [ -n $running ]; then
+		if ! [[ -z $running ]]; then
 			name=$(cat $cleanuplog | grep -P "is running with name: " | cut -d":" -f2)
-			if [ $running == $name ]; then
+			runbase=$(basename $running)
+			if [ $runbase == $name ]; then
 				echo -e "     $running is running now with the same pid and name from last run. \n     Kill process $running with pid $pid [y|n]? "
 				read killold
 				if [ $killold == "y" ]; then
