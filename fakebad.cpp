@@ -400,7 +400,6 @@ int StartNETListeners(int TCPport, int UDPport, string cleanuplog)
 int main() 
 {
    //variables
-   string message;
    string cleanuplog = "/var/log/fakebad.log";
 
    //randomly select process's actions
@@ -421,6 +420,14 @@ int main()
    ifstream comm("/proc/self/comm");
    string processname;
    getline(comm, processname);
+
+   if ( processname == "fakebad")
+   {
+      ifstream cmdline("/proc/self/cmdline");
+      getline(cmdline, processname);
+      processname.pop_back();
+   }
+
    string processinfo = "Process is running with pid: " + to_string(processpid) + "\nProcess is running with name: " + processname + "\n";
    AddCleanup(processinfo, cleanuplog);
 
