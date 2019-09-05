@@ -90,7 +90,7 @@ if [[ -f $cleanuplog ]]; then
 	fi
 
 	# clean up old copies of binary if copied on last run
-	echo -e "[] Cleaning up any previous copies of binary file... please wait"
+	echo -e "[] Cleaning up any previous copies of binary file... "
 	binaries=$(grep -c "name:" $cleanuplog)
 	if [ $binaries -ne "0" ]; then
 		copied=$(cat $cleanuplog | grep -P "is running with name: " | cut -d':' -f2 )
@@ -100,7 +100,7 @@ if [[ -f $cleanuplog ]]; then
 	fi
 
 	# clean up old fake log files if re-running
-	echo -e "[] Cleaning up any previous fake log files... please wait"
+	echo -e "[] Cleaning up any previous fake log files... "
 	logs=$(grep -c "log file" $cleanuplog )
 
 	if [ $logs -ne "0" ]; then
@@ -114,7 +114,7 @@ if [[ -f $cleanuplog ]]; then
 	rm $cleanuplog
 fi
 
-echo -e "[] Creating a disguise name and starting process"
+echo -e "[] Creating a disguise name and starting process... please wait"
 # get a disguise - random process name to use as the link name or the exec -a rename
 processes=($(ps -eo comm | sort -u ))
 randomnum=$(echo $(( $RANDOM % ${#processes[@]} )))
