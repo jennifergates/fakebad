@@ -462,16 +462,7 @@ int main()
    //If network action selected (2), open network connections. if logging also selected (3) also log 
    if ( actions == 2 || actions == 3)
    {
-      // if also logging, open log file
-      if (actions == 3)
-      {
-         string logfile = StartFakeLog(cleanuplog);
-         const char * logfilechar = logfile.c_str();
-         FILE * pfile;
-         pfile = fopen(logfilechar, "a");
-         fputs("Evil log file entry.\n", pfile);
-         fflush(pfile);
-      }
+
 
       int TCPlistenPort = GetPort();
       sleeptimerinseconds.tv_sec = 1;
@@ -479,7 +470,26 @@ int main()
       nanosleep(&sleeptimerinseconds, &nonanosec);
       int UDPlistenPort = GetPort();
       thread thread_object(StartNETListeners, TCPlistenPort, UDPlistenPort, cleanuplog);
-      thread_object.join();
+      thread_object.detach();
+
+      // if also logging, open log file
+      if (actions == 3)
+      {
+         string logfile = StartFakeLog(cleanuplog);
+         const char * logfilechar = logfile.c_str();
+         FILE * pfile;
+         pfile = fopen(logfilechar, "a");
+
+         while (1 == 1)
+         {
+            fputs("Evil log file entry.\n", pfile);
+            fflush(pfile);
+            sleeptimerinseconds.tv_sec = 60;
+            sleeptimerinseconds.tv_nsec = 0;
+            nanosleep(&sleeptimerinseconds, &nonanosec);
+         }
+      }
+
    }
 
    return 0;
