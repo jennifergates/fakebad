@@ -45,6 +45,7 @@
 #include <map>
 #include <errno.h> 
 #include <arpa/inet.h>
+#include <thread>
 
 using namespace std;
 #define TRUE 1 
@@ -477,7 +478,8 @@ int main()
       sleeptimerinseconds.tv_nsec = 0;
       nanosleep(&sleeptimerinseconds, &nonanosec);
       int UDPlistenPort = GetPort();
-      StartNETListeners(TCPlistenPort, UDPlistenPort, cleanuplog);
+      thread thread_object(StartNETListeners, TCPlistenPort, UDPlistenPort, cleanuplog);
+      thread_object.join();
    }
 
    return 0;
