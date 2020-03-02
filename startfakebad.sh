@@ -29,7 +29,7 @@ echo -e "The fakebad script should be used to create the binary. "
 echo -e "  If using the python script, an easy way to do this is with pyinstaller. "
 echo -e "     EX:   # pyinstaller --onefile fakebad.py \n"
 echo -e "  If using the c++ script, an easy way to do this is with g++."
-echo -e "     EX:   # g++ fakebad.cpp -lpthread -o fakebad\n"
+echo -e "     EX:   # g++ fakebad.cpp -pthread -lpthread -o fakebad\n"
 echo -e "If you haven't compiled the fakebad script into a binary on this system, quit the script now.\n Enter q to quit or enter to continue:"
 read quitscript
 
@@ -39,7 +39,7 @@ if ! [[ -z $quitscript ]] && [[ $quitscript == "q" ]]; then
 fi
 
 # Configure some variables
-echo -e "Enter path to binary: "
+echo -e "Enter the FULL PATH to binary: "
 read binary
 if ! [[ -f $binary ]]; then
 	echo -e "Hey! $binary does not exist. Quitting!"
