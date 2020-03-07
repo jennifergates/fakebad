@@ -77,7 +77,7 @@ def logger():
 
     # add log file name to cleanup log 
     addcleanup("Fakebad process's fake log file: "+logfile+"\n")
-    logfileh = open(logfile, 'a' )
+    logfileh = open(logfile, 'a', buffering=1 )
     return logfileh
 
 def getactions():
